@@ -1,18 +1,33 @@
-# aws-lambda-r-runtime
+# aws-lambda-r-runtime fork
+
+Basically the same as [bakdata/aws-lambda-r-runtime](https://github.com/bakdata/aws-lambda-r-runtime), except I added a `tidyverse` layer for a project I'm working on. It's not really all of the `tidyverse`, because I also wanted `RPushbullet`, and `stringi` (a dependency of `stringr`) takes up like 56MB, when the cap for an AWS Lambda function is like 64MB.
+
+Usage
+
+```shell
+# Set up AWS creds, then:
+cd tidyverse/
+VERSION=3.6.0
+./build.sh ${VERSION}
+./deploy.sh ${VERSION}
+```
 
 [![Build Status](https://travis-ci.com/bakdata/aws-lambda-r-runtime.svg?branch=master)](https://travis-ci.com/bakdata/aws-lambda-r-runtime)
 
 This project makes it easy to run AWS Lambda Functions written in R.
 
 ## Example
+
 To run the example, we need to create a IAM role executing our lambda.
 This role should have the following properties:
+
 - Trusted entity – Lambda.
 - Permissions – AWSLambdaBasicExecutionRole.
 
 Furthermore you need a current version of the AWS CLI.
 
 Then create a lambda function which uses the R runtime layer:
+
 ```bash
 cd example/
 chmod 755 script.R
@@ -32,6 +47,7 @@ aws lambda create-function --function-name r-example \
 
 The function simply increments 'x' by 1.
 Invoke the function:
+
 ```bash
 aws lambda invoke --function-name r-example \
     --payload '{"x":1}' response.txt
@@ -39,6 +55,7 @@ cat response.txt
 ```
 
 The expected result should look similar to this:
+
 ```json
 2
 ```
@@ -47,6 +64,7 @@ The expected result should look similar to this:
 
 We also provide a layer which ships with some recommended R packages, such as `Matrix`.
 This example lambda shows how to use them:
+
 ```bash
 cd example/
 chmod 755 matrix.R
@@ -70,14 +88,16 @@ aws lambda create-function --function-name r-matrix-example \
 
 The function returns the second column of some static matrix.
 Invoke the function:
+
 ```bash
 aws lambda invoke --function-name r-matrix-example response.txt
 cat response.txt
 ```
 
 The expected result should look similar to this:
+
 ```json
-[4,5,6]
+[4, 5, 6]
 ```
 
 ## Provided layers
@@ -94,6 +114,7 @@ R,
 [logging](https://cran.r-project.org/package=logging)
 
 Available AWS regions:
+
 - ap-northeast-1
 - ap-northeast-2
 - ap-south-1
@@ -112,6 +133,7 @@ Available AWS regions:
 - us-west-2
 
 Available R versions:
+
 - 3_5_1
 - 3_5_3
 - 3_6_0
@@ -121,6 +143,7 @@ Latest ARN can be retrieved from the [Travis CI build log](https://travis-ci.com
 `arn:aws:lambda:$region:131329294410:layer:r-runtime-$r_version:$layer_version`
 
 Automated command for retrieving the ARN does not work currently:
+
 ```bash
 aws lambda list-layer-versions --max-items 1 --no-paginate  \
     --layer-name arn:aws:lambda:${region}:131329294410:layer:r-runtime-${r_version} \
@@ -147,6 +170,7 @@ spatial,
 survival
 
 Available AWS regions:
+
 - ap-northeast-1
 - ap-northeast-2
 - ap-south-1
@@ -165,6 +189,7 @@ Available AWS regions:
 - us-west-2
 
 Available R versions:
+
 - 3_5_1
 - 3_5_3
 - 3_6_0
@@ -174,6 +199,7 @@ Latest ARN can be retrieved from the [Travis CI build log](https://travis-ci.com
 `arn:aws:lambda:$region:131329294410:layer:r-recommended-$r_version:$layer_version`
 
 Automated command for retrieving the ARN does not work currently:
+
 ```bash
 aws lambda list-layer-versions --max-items 1 --no-paginate  \
     --layer-name arn:aws:lambda:${region}:131329294410:layer:r-recommended-${r_version} \
@@ -187,6 +213,7 @@ It used to contain the [awspack](https://cran.r-project.org/package=awspack) pac
 You can still find it in old versions of the layer that have been published before 2020.
 
 Available AWS regions:
+
 - ap-northeast-1
 - ap-northeast-2
 - ap-south-1
@@ -205,6 +232,7 @@ Available AWS regions:
 - us-west-2
 
 Available R versions:
+
 - 3_5_1
 - 3_5_3
 - 3_6_0
@@ -214,6 +242,7 @@ Latest ARN can be retrieved from the [Travis CI build log](https://travis-ci.com
 `arn:aws:lambda:$region:131329294410:layer:r-awspack-$r_version:$layer_version`
 
 Automated command for retrieving the ARN does not work currently:
+
 ```bash
 aws lambda list-layer-versions --max-items 1 --no-paginate  \
     --layer-name arn:aws:lambda:${region}:131329294410:layer:r-awspack-${r_version} \
@@ -254,8 +283,7 @@ In order to make the runtime log debugging messages, you can set the environment
 AWS Lambda is limited to running with 3GB RAM and must finish within 15 minutes.
 It is therefore not feasible to execute long running R scripts with this runtime.
 Furthermore, only the `/tmp/` directory is writeable on AWS Lambda.
-This must be considered when writing to the local disk. 
-
+This must be considered when writing to the local disk.
 
 ## Building
 
@@ -276,17 +304,21 @@ You need to specify the R version, e.g., `3.6.0`, as well as the S3 bucket to up
 Finally, you need to create an EC2 instance profile which is capable of uploading to the S3 bucket.
 See the [AWS documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html#create-iam-role) for details.
 With everything prepared, you can run the script:
+
 ```bash
 ./remote_compile_and_deploy.sh <version> <bucket-name> <instance-profile>
 ```
+
 The script will also take care of terminating the launched EC2 instance.
 
 To manually build R from source, follow these steps:
 
 Start an EC2 instance which uses the [Lambda AMI](https://console.aws.amazon.com/ec2/v2/home#Images:visibility=public-images;search=amzn-ami-hvm-2017.03.1.20170812-x86_64-gp2):
+
 ```bash
 aws ec2 run-instances --image-id ami-657bd20a --count 1 --instance-type t2.medium --key-name <my-key-pair>
 ```
+
 Now run the `compile.sh` script in `r/`.
 You must pass the R version as a parameter to the script, e.g., `3.6.0`.
 The script produces a zip containing a functional R installation in `/opt/R/`.
