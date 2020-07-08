@@ -6,8 +6,13 @@ Usage
 
 ```shell
 # Set up AWS creds, then:
-cd tidyverse/
 VERSION=3.6.0
+cd r/
+./build.sh ${VERSION}
+cd ../runtime/
+./build.sh
+./deploy ${VERSION}
+cd ../tidyverse/
 ./build.sh ${VERSION}
 ./deploy.sh ${VERSION}
 ```
